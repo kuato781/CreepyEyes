@@ -15,6 +15,8 @@ final class BLEManager: NSObject, ObservableObject {
     private var centralManager: CBCentralManager!
     private var commandCharacteristic: CBCharacteristic?
 
+    private var disconnectAfterStop = false
+
     static let serviceUUID =
         CBUUID(string: "4fafc201-1fb5-459e-8fcc-c5c9c331914b")
 
@@ -78,10 +80,36 @@ final class BLEManager: NSObject, ObservableObject {
             return
         }
 
-        status = "Disconnecting..."
+        guard let characteristic = commandCharacteristic else {
 
-        centralManager.cancelPeripheralConnection(
-            peripheral
+            status = "Disconnecting..."
+
+            centralManager.cancelPeripheralConnection(
+                peripheral
+            )
+
+            return
+        }
+
+        status = "Stopping creep..."
+
+        disconnectAfterStop = true
+
+        guard let data = "S".data(using: .utf8) else {
+
+            disconnectAfterStop = false
+
+            centralManager.cancelPeripheralConnection(
+                peripheral
+            )
+
+            return
+        }
+
+        peripheral.writeValue(
+            data,
+            for: characteristic,
+            type: .withResponse
         )
     }
 
@@ -107,7 +135,31 @@ final class BLEManager: NSObject, ObservableObject {
             type: .withResponse
         )
 
-        status = "Sent \(command)"
+        status = "Sent \(commandName(command))"
+    }
+
+    private func commandName(_ command: String) -> String {
+
+        switch command.uppercased() {
+
+        case "B":
+            return "Blink"
+
+        case "C":
+            return "Creepy Mode"
+
+        case "L":
+            return "Left Wink"
+
+        case "R":
+            return "Right Wink"
+
+        case "S":
+            return "Stop / Eyes Open"
+
+        default:
+            return command
+        }
     }
 
     // MARK: - Helpers
@@ -117,9 +169,7 @@ final class BLEManager: NSObject, ObservableObject {
     }
 }
 
-// ==================================================
-// CENTRAL MANAGER
-// ==================================================
+// MARK: - CBCentralManagerDelegate
 
 extension BLEManager: CBCentralManagerDelegate {
 
@@ -212,8 +262,13 @@ extension BLEManager: CBCentralManagerDelegate {
         connectedDevice = nil
         connectedDeviceName = nil
         commandCharacteristic = nil
+        disconnectAfterStop = false
 
-        status = "Connection failed"
+        if let error {
+            status = "Connection failed: \(error.localizedDescription)"
+        } else {
+            status = "Connection failed"
+        }
     }
 
     func centralManager(
@@ -226,14 +281,17 @@ extension BLEManager: CBCentralManagerDelegate {
         connectedDevice = nil
         connectedDeviceName = nil
         commandCharacteristic = nil
+        disconnectAfterStop = false
 
-        status = "Disconnected"
+        if let error {
+            status = "Disconnected: \(error.localizedDescription)"
+        } else {
+            status = "Disconnected"
+        }
     }
 }
 
-// ==================================================
-// PERIPHERAL / SERVICE / CHARACTERISTIC DISCOVERY
-// ==================================================
+// MARK: - CBPeripheralDelegate
 
 extension BLEManager: CBPeripheralDelegate {
 
@@ -243,7 +301,8 @@ extension BLEManager: CBPeripheralDelegate {
     ) {
 
         if let error {
-            status = "Service discovery failed: \(error.localizedDescription)"
+            status =
+                "Service discovery failed: \(error.localizedDescription)"
             return
         }
 
@@ -271,7 +330,8 @@ extension BLEManager: CBPeripheralDelegate {
     ) {
 
         if let error {
-            status = "Characteristic discovery failed: \(error.localizedDescription)"
+            status =
+                "Characteristic discovery failed: \(error.localizedDescription)"
             return
         }
 
@@ -299,7 +359,22 @@ extension BLEManager: CBPeripheralDelegate {
     ) {
 
         if let error {
-            status = "Write failed: \(error.localizedDescription)"
+
+            status =
+                "Write failed: \(error.localizedDescription)"
+
+            disconnectAfterStop = false
+            return
+        }
+
+        if disconnectAfterStop {
+
+            disconnectAfterStop = false
+            status = "Disconnecting..."
+
+            centralManager.cancelPeripheralConnection(
+                peripheral
+            )
         }
     }
 }

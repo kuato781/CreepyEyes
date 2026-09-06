@@ -9,93 +9,189 @@ struct ContentView: View {
 
         NavigationStack {
 
-            VStack(spacing: 20) {
+            ZStack {
 
-                Text("Creepy Eyes")
-                    .font(.largeTitle)
-                    .bold()
+                Color(.systemBackground)
+                    .ignoresSafeArea()
 
-                Text(bleManager.status)
-                    .foregroundStyle(.secondary)
+                ScrollView {
 
-                if bleManager.isConnected {
-                    connectedControls
-                } else {
-                    scanView
+                    VStack(spacing: 24) {
+
+                        header
+
+                        statusCard
+
+                        if bleManager.isConnected {
+                            connectedControls
+                        } else {
+                            scanView
+                        }
+
+                        brandingFooter
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 18)
+                    .padding(.bottom, 28)
                 }
-
-                Spacer()
             }
-            .padding()
         }
+    }
+
+    // MARK: - Header
+
+    private var header: some View {
+
+        VStack(spacing: 8) {
+
+            Image(systemName: "eyes")
+                .font(.system(size: 44, weight: .semibold))
+                .foregroundStyle(.blue)
+
+            Text("Creepy Eyes")
+                .font(.system(size: 34, weight: .bold))
+
+            Text("Wireless Creep Control")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    // MARK: - Status
+
+    private var statusCard: some View {
+
+        HStack(spacing: 12) {
+
+            Circle()
+                .fill(statusColor)
+                .frame(width: 10, height: 10)
+
+            Text(bleManager.status)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Spacer()
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color(.secondarySystemBackground))
+        )
+    }
+
+    private var statusColor: Color {
+
+        if bleManager.isConnected {
+            return .green
+        }
+
+        if bleManager.bluetoothReady {
+            return .blue
+        }
+
+        return .orange
     }
 
     // MARK: - Scan View
 
     private var scanView: some View {
 
-        VStack(spacing: 20) {
+        VStack(spacing: 18) {
 
-            Button("Scan for Creeps") {
+            Button {
                 bleManager.startScanning()
+            } label: {
+                Label(
+                    "Scan for Creeps",
+                    systemImage: "dot.radiowaves.left.and.right"
+                )
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
             }
             .buttonStyle(.borderedProminent)
             .disabled(!bleManager.bluetoothReady)
 
             if bleManager.discoveredDevices.isEmpty {
 
-                Text("No Creeps Found")
+                VStack(spacing: 12) {
+
+                    Image(systemName: "binoculars")
+                        .font(.system(size: 34))
+                        .foregroundStyle(.secondary)
+
+                    Text("No Creeps Found")
+                        .font(.headline)
+
+                    Text(
+                        "Make sure a creep is powered on and advertising."
+                    )
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .padding(.top, 60)
+                    .multilineTextAlignment(.center)
+                }
+                .padding(.top, 36)
 
             } else {
 
-                ForEach(
-                    bleManager.discoveredDevices,
-                    id: \.identifier
-                ) { peripheral in
+                VStack(spacing: 14) {
 
-                    VStack(spacing: 12) {
+                    ForEach(
+                        bleManager.discoveredDevices,
+                        id: \.identifier
+                    ) { peripheral in
 
-                        Text(
-                            bleManager.displayName(
-                                for: peripheral
-                            )
-                        )
-                        .font(.title2)
-                        .bold()
+                        VStack(spacing: 12) {
 
-                        Text(peripheral.identifier.uuidString)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            HStack {
 
-                        Button {
-                            print(
-                                "CONNECT BUTTON TAPPED: \(bleManager.displayName(for: peripheral))"
-                            )
+                                Image(systemName: "eyes")
+                                    .font(.title2)
+                                    .foregroundStyle(.blue)
 
-                            bleManager.connect(
-                                to: peripheral
-                            )
+                                VStack(
+                                    alignment: .leading,
+                                    spacing: 3
+                                ) {
 
-                        } label: {
+                                    Text(
+                                        bleManager.displayName(
+                                            for: peripheral
+                                        )
+                                    )
+                                    .font(.title3)
+                                    .bold()
 
-                            Text(
-                                "Connect to \(bleManager.displayName(for: peripheral))"
-                            )
-                            .frame(maxWidth: .infinity)
+                                    Text("Available")
+                                        .font(.caption)
+                                        .foregroundStyle(.green)
+                                }
+
+                                Spacer()
+                            }
+
+                            Button {
+                                bleManager.connect(to: peripheral)
+                            } label: {
+                                Label(
+                                    "Connect to \(bleManager.displayName(for: peripheral))",
+                                    systemImage: "link"
+                                )
+                                .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.borderedProminent)
                         }
-                        .buttonStyle(.borderedProminent)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 18)
+                                .fill(
+                                    Color(
+                                        .secondarySystemBackground
+                                    )
+                                )
+                        )
                     }
-                    .padding()
-                    .background(
-                        RoundedRectangle(
-                            cornerRadius: 16
-                        )
-                        .fill(
-                            Color.gray.opacity(0.12)
-                        )
-                    )
                 }
             }
         }
@@ -105,49 +201,160 @@ struct ContentView: View {
 
     private var connectedControls: some View {
 
-        VStack(spacing: 18) {
+        VStack(spacing: 20) {
 
-            if let name =
-                bleManager.connectedDeviceName {
+            connectedDeviceCard
 
-                Text(name)
-                    .font(.title)
-                    .bold()
-            }
+            VStack(spacing: 14) {
 
-            Button("Blink") {
-                bleManager.sendCommand("B")
-            }
-            .buttonStyle(.borderedProminent)
+                controlButton(
+                    title: "Blink",
+                    systemImage: "eye",
+                    command: "B",
+                    prominent: true
+                )
 
-            Button("Creepy Mode") {
-                bleManager.sendCommand("C")
-            }
-            .buttonStyle(.borderedProminent)
+                controlButton(
+                    title: "Creepy Mode",
+                    systemImage: "sparkles",
+                    command: "C",
+                    prominent: true
+                )
 
-            HStack(spacing: 20) {
+                HStack(spacing: 12) {
 
-                Button("Left Wink") {
-                    bleManager.sendCommand("L")
+                    controlButton(
+                        title: "Left Wink",
+                        systemImage: "arrow.left.circle",
+                        command: "L"
+                    )
+
+                    controlButton(
+                        title: "Right Wink",
+                        systemImage: "arrow.right.circle",
+                        command: "R"
+                    )
                 }
 
-                Button("Right Wink") {
-                    bleManager.sendCommand("R")
-                }
+                controlButton(
+                    title: "Stop / Eyes Open",
+                    systemImage: "eye.fill",
+                    command: "S"
+                )
             }
-            .buttonStyle(.bordered)
-
-            Button("Stop / Eyes Open") {
-                bleManager.sendCommand("S")
-            }
-            .buttonStyle(.bordered)
 
             Divider()
+                .padding(.vertical, 4)
 
-            Button("Disconnect") {
+            Button(role: .destructive) {
+
                 bleManager.disconnect()
+
+            } label: {
+
+                Label(
+                    "Disconnect",
+                    systemImage: "xmark.circle"
+                )
+                .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
+        }
+    }
+
+    // MARK: - Connected Device Card
+
+    private var connectedDeviceCard: some View {
+
+        VStack(spacing: 10) {
+
+            Image(systemName: "eyes")
+                .font(.system(size: 38))
+                .foregroundStyle(.blue)
+
+            Text(
+                bleManager.connectedDeviceName
+                ?? "Connected Creep"
+            )
+            .font(.system(size: 30, weight: .bold))
+
+            Label(
+                "Connected",
+                systemImage: "checkmark.circle.fill"
+            )
+            .font(.subheadline)
+            .foregroundStyle(.green)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 22)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.secondarySystemBackground))
+        )
+    }
+
+    // MARK: - Control Button Helper
+
+    @ViewBuilder
+    private func controlButton(
+        title: String,
+        systemImage: String,
+        command: String,
+        prominent: Bool = false
+    ) -> some View {
+
+        if prominent {
+
+            Button {
+                bleManager.sendCommand(command)
+            } label: {
+                Label(
+                    title,
+                    systemImage: systemImage
+                )
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 5)
+            }
+            .buttonStyle(.borderedProminent)
+
+        } else {
+
+            Button {
+                bleManager.sendCommand(command)
+            } label: {
+                Label(
+                    title,
+                    systemImage: systemImage
+                )
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 5)
+            }
+            .buttonStyle(.bordered)
+        }
+    }
+
+    // MARK: - Branding
+
+    private var brandingFooter: some View {
+
+        VStack(spacing: 8) {
+
+            Divider()
+                .padding(.top, 8)
+
+            Image("ArroyoCooperativeLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: 220)
+                .padding(.top, 6)
+
+            Text(
+                "Built for highly questionable purposes."
+            )
+            .font(.caption2)
+            .foregroundStyle(.secondary)
         }
     }
 }
