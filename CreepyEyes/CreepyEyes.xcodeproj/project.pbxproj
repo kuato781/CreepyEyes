@@ -6,8 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		3B91E386304D83D900B33390 /* BLEManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B91E385304D83B900B33390 /* BLEManager.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		3B91E377304D80E900B33390 /* CreepyEyes.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CreepyEyes.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3B91E385304D83B900B33390 /* BLEManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -32,6 +37,7 @@
 		3B91E36E304D80E900B33390 = {
 			isa = PBXGroup;
 			children = (
+				3B91E385304D83B900B33390 /* BLEManager.swift */,
 				3B91E379304D80E900B33390 /* CreepyEyes */,
 				3B91E378304D80E900B33390 /* Products */,
 			);
@@ -119,6 +125,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3B91E386304D83D900B33390 /* BLEManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -256,6 +263,7 @@
 				DEVELOPMENT_TEAM = G2MC9KNH25;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Creepy Eyes uses Bluetooth to discover and control nearby Creepy Eyes glasses.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -288,6 +296,7 @@
 				DEVELOPMENT_TEAM = G2MC9KNH25;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Creepy Eyes uses Bluetooth to discover and control nearby Creepy Eyes glasses.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
