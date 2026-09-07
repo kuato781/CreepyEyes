@@ -16,6 +16,9 @@ DerivedData/
 # Xcode workspace user data
 *.xcworkspace/xcuserdata/
 
+# Secrets
+secrets.h
+
 # Misc
 *.swp
 *~
