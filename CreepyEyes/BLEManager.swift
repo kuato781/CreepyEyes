@@ -4,18 +4,29 @@ import Combine
 
 final class BLEManager: NSObject, ObservableObject {
 
-    @Published var bluetoothReady = false
-    @Published var status = "Starting Bluetooth..."
-    @Published var discoveredDevices: [CBPeripheral] = []
+    // MARK: - Published State
 
-    @Published var connectedDevice: CBPeripheral?
-    @Published var connectedDeviceName: String?
-    @Published var isConnected = false
+    @Published var bluetoothReady = false
+    @Published var isScanning = false
+    @Published var status = "Starting Bluetooth..."
+
+    @Published var discoveredDevices: [CBPeripheral] = []
+    @Published var connectedDevices: [CBPeripheral] = []
+
+    @Published var connectingDeviceIDs: Set<UUID> = []
+    @Published var readyDeviceIDs: Set<UUID> = []
+
+    // MARK: - CoreBluetooth
 
     private var centralManager: CBCentralManager!
-    private var commandCharacteristic: CBCharacteristic?
 
-    private var disconnectAfterStop = false
+    // Each creep gets its OWN command characteristic.
+    private var commandCharacteristics: [UUID: CBCharacteristic] = [:]
+
+    // Creeps waiting for Stop acknowledgement before disconnect.
+    private var pendingDisconnectIDs: Set<UUID> = []
+
+    // MARK: - Creepy Eyes BLE UUIDs
 
     static let serviceUUID =
         CBUUID(string: "4fafc201-1fb5-459e-8fcc-c5c9c331914b")
@@ -23,13 +34,46 @@ final class BLEManager: NSObject, ObservableObject {
     static let characteristicUUID =
         CBUUID(string: "beb5483e-36e1-4688-b7f5-ea07361b26a8")
 
+    // MARK: - Init
+
     override init() {
+
         super.init()
 
         centralManager = CBCentralManager(
             delegate: self,
             queue: nil
         )
+    }
+
+    // MARK: - Convenience State
+
+    var isAnyConnected: Bool {
+        !connectedDevices.isEmpty
+    }
+
+    var connectedCount: Int {
+        connectedDevices.count
+    }
+
+    var readyCount: Int {
+        readyDeviceIDs.count
+    }
+
+    var availableDiscoveredDevices: [CBPeripheral] {
+
+        discoveredDevices.filter { peripheral in
+
+            !connectedDevices.contains(
+                where: {
+                    $0.identifier == peripheral.identifier
+                }
+            )
+            &&
+            !connectingDeviceIDs.contains(
+                peripheral.identifier
+            )
+        }
     }
 
     // MARK: - Scanning
@@ -43,6 +87,7 @@ final class BLEManager: NSObject, ObservableObject {
 
         discoveredDevices.removeAll()
 
+        isScanning = true
         status = "Scanning for Creeps..."
 
         centralManager.scanForPeripherals(
@@ -54,17 +99,50 @@ final class BLEManager: NSObject, ObservableObject {
     }
 
     func stopScanning() {
+
         centralManager.stopScan()
-        status = "Scan stopped"
+
+        isScanning = false
+
+        if isAnyConnected {
+
+            status = fleetReadyStatus()
+
+        } else {
+
+            status = "Scan stopped"
+        }
     }
 
     // MARK: - Connection
 
     func connect(to peripheral: CBPeripheral) {
 
-        stopScanning()
+        guard !connectedDevices.contains(
+            where: {
+                $0.identifier == peripheral.identifier
+            }
+        ) else {
 
-        status = "Connecting to \(displayName(for: peripheral))..."
+            status =
+                "\(displayName(for: peripheral)) is already connected"
+
+            return
+        }
+
+        guard !connectingDeviceIDs.contains(
+            peripheral.identifier
+        ) else {
+
+            return
+        }
+
+        connectingDeviceIDs.insert(
+            peripheral.identifier
+        )
+
+        status =
+            "Connecting to \(displayName(for: peripheral))..."
 
         peripheral.delegate = self
 
@@ -74,15 +152,28 @@ final class BLEManager: NSObject, ObservableObject {
         )
     }
 
-    func disconnect() {
+    // MARK: - Disconnect One
 
-        guard let peripheral = connectedDevice else {
+    func disconnect(_ peripheral: CBPeripheral) {
+
+        guard connectedDevices.contains(
+            where: {
+                $0.identifier == peripheral.identifier
+            }
+        ) else {
             return
         }
 
-        guard let characteristic = commandCharacteristic else {
+        let id = peripheral.identifier
 
-            status = "Disconnecting..."
+        guard
+            peripheral.state == .connected,
+            let characteristic =
+                commandCharacteristics[id]
+        else {
+
+            status =
+                "Disconnecting \(displayName(for: peripheral))..."
 
             centralManager.cancelPeripheralConnection(
                 peripheral
@@ -91,13 +182,10 @@ final class BLEManager: NSObject, ObservableObject {
             return
         }
 
-        status = "Stopping creep..."
-
-        disconnectAfterStop = true
-
-        guard let data = "S".data(using: .utf8) else {
-
-            disconnectAfterStop = false
+        guard
+            let stopData =
+                "S".data(using: .utf8)
+        else {
 
             centralManager.cancelPeripheralConnection(
                 peripheral
@@ -105,26 +193,103 @@ final class BLEManager: NSObject, ObservableObject {
 
             return
         }
+
+        status =
+            "Stopping \(displayName(for: peripheral))..."
+
+        pendingDisconnectIDs.insert(id)
 
         peripheral.writeValue(
-            data,
+            stopData,
             for: characteristic,
             type: .withResponse
         )
     }
 
-    // MARK: - Commands
+    // MARK: - Disconnect All
 
-    func sendCommand(_ command: String) {
+    func disconnectAll() {
 
-        guard let peripheral = connectedDevice,
-              let characteristic = commandCharacteristic else {
-
-            status = "Creep not ready"
+        guard !connectedDevices.isEmpty else {
             return
         }
 
-        guard let data = command.data(using: .utf8) else {
+        status = "Stopping Creep Fleet..."
+
+        for peripheral in connectedDevices {
+
+            let id = peripheral.identifier
+
+            guard
+                peripheral.state == .connected,
+                let characteristic =
+                    commandCharacteristics[id],
+                let stopData =
+                    "S".data(using: .utf8)
+            else {
+
+                centralManager.cancelPeripheralConnection(
+                    peripheral
+                )
+
+                continue
+            }
+
+            pendingDisconnectIDs.insert(id)
+
+            peripheral.writeValue(
+                stopData,
+                for: characteristic,
+                type: .withResponse
+            )
+        }
+    }
+
+    // MARK: - Commands
+
+    /// Send to ONE creep.
+    func sendCommand(
+        _ command: String,
+        to deviceID: UUID
+    ) {
+
+        guard
+            let peripheral =
+                connectedDevices.first(
+                    where: {
+                        $0.identifier == deviceID
+                    }
+                )
+        else {
+
+            status = "Creep is not connected"
+            return
+        }
+
+        guard readyDeviceIDs.contains(deviceID) else {
+
+            status =
+                "\(displayName(for: peripheral)) is not ready"
+
+            return
+        }
+
+        guard
+            let characteristic =
+                commandCharacteristics[deviceID]
+        else {
+
+            status =
+                "\(displayName(for: peripheral)) has no command channel"
+
+            return
+        }
+
+        guard
+            let data =
+                command.data(using: .utf8)
+        else {
+
             status = "Could not encode command"
             return
         }
@@ -135,10 +300,106 @@ final class BLEManager: NSObject, ObservableObject {
             type: .withResponse
         )
 
-        status = "Sent \(commandName(command))"
+        status =
+            "Sent \(commandName(command)) to \(displayName(for: peripheral))"
     }
 
-    private func commandName(_ command: String) -> String {
+    /// Send to EVERY ready creep currently connected
+    /// to this iPhone.
+    func sendCommandToAll(
+        _ command: String
+    ) {
+
+        let targets =
+            connectedDevices.filter {
+
+                readyDeviceIDs.contains(
+                    $0.identifier
+                )
+                &&
+                commandCharacteristics[
+                    $0.identifier
+                ] != nil
+            }
+
+        guard !targets.isEmpty else {
+
+            status = "No Creeps ready"
+            return
+        }
+
+        guard
+            let data =
+                command.data(using: .utf8)
+        else {
+
+            status = "Could not encode command"
+            return
+        }
+
+        for peripheral in targets {
+
+            guard
+                let characteristic =
+                    commandCharacteristics[
+                        peripheral.identifier
+                    ]
+            else {
+                continue
+            }
+
+            peripheral.writeValue(
+                data,
+                for: characteristic,
+                type: .withResponse
+            )
+        }
+
+        if targets.count == 1 {
+
+            status =
+                "Sent \(commandName(command)) to \(displayName(for: targets[0]))"
+
+        } else {
+
+            status =
+                "Sent \(commandName(command)) to ALL \(targets.count) Creeps"
+        }
+    }
+
+    // MARK: - Readiness
+
+    func isReady(
+        _ peripheral: CBPeripheral
+    ) -> Bool {
+
+        readyDeviceIDs.contains(
+            peripheral.identifier
+        )
+    }
+
+    func isConnecting(
+        _ peripheral: CBPeripheral
+    ) -> Bool {
+
+        connectingDeviceIDs.contains(
+            peripheral.identifier
+        )
+    }
+
+    // MARK: - Helpers
+
+    func displayName(
+        for peripheral: CBPeripheral
+    ) -> String {
+
+        peripheral.name
+        ?? "Unnamed Creep"
+    }
+
+    private func commandName(
+        _ command: String
+    ) -> String {
 
         switch command.uppercased() {
 
@@ -162,16 +423,39 @@ final class BLEManager: NSObject, ObservableObject {
         }
     }
 
-    // MARK: - Helpers
+    private func fleetReadyStatus() -> String {
 
-    func displayName(for peripheral: CBPeripheral) -> String {
-        peripheral.name ?? "Unnamed Creep"
+        if connectedCount == 1 {
+
+            if let creep = connectedDevices.first {
+
+                if isReady(creep) {
+
+                    return
+                        "\(displayName(for: creep)) ready"
+
+                } else {
+
+                    return
+                        "\(displayName(for: creep)) connected"
+                }
+            }
+        }
+
+        if connectedCount > 1 {
+
+            return
+                "\(readyCount) of \(connectedCount) Creeps ready"
+        }
+
+        return "Bluetooth ready"
     }
 }
 
 // MARK: - CBCentralManagerDelegate
 
-extension BLEManager: CBCentralManagerDelegate {
+extension BLEManager:
+    CBCentralManagerDelegate {
 
     func centralManagerDidUpdateState(
         _ central: CBCentralManager
@@ -180,31 +464,44 @@ extension BLEManager: CBCentralManagerDelegate {
         switch central.state {
 
         case .poweredOn:
+
             bluetoothReady = true
             status = "Bluetooth ready"
 
         case .poweredOff:
+
             bluetoothReady = false
+            isScanning = false
             status = "Bluetooth is off"
 
         case .unauthorized:
+
             bluetoothReady = false
+            isScanning = false
             status = "Bluetooth permission denied"
 
         case .unsupported:
+
             bluetoothReady = false
+            isScanning = false
             status = "Bluetooth unsupported"
 
         case .resetting:
+
             bluetoothReady = false
+            isScanning = false
             status = "Bluetooth resetting"
 
         case .unknown:
+
             bluetoothReady = false
+            isScanning = false
             status = "Bluetooth state unknown"
 
         @unknown default:
+
             bluetoothReady = false
+            isScanning = false
             status = "Unknown Bluetooth state"
         }
     }
@@ -217,7 +514,10 @@ extension BLEManager: CBCentralManagerDelegate {
     ) {
 
         guard !discoveredDevices.contains(
-            where: { $0.identifier == peripheral.identifier }
+            where: {
+                $0.identifier ==
+                peripheral.identifier
+            }
         ) else {
             return
         }
@@ -225,13 +525,17 @@ extension BLEManager: CBCentralManagerDelegate {
         discoveredDevices.append(peripheral)
 
         let name =
-            peripheral.name ??
+            peripheral.name
+            ??
             advertisementData[
                 CBAdvertisementDataLocalNameKey
-            ] as? String ??
+            ] as? String
+            ??
             "Unnamed Creep"
 
-        print("FOUND CREEP: \(name)")
+        print(
+            "FOUND CREEP: \(name)"
+        )
     }
 
     func centralManager(
@@ -239,13 +543,26 @@ extension BLEManager: CBCentralManagerDelegate {
         didConnect peripheral: CBPeripheral
     ) {
 
-        connectedDevice = peripheral
-        connectedDeviceName = displayName(for: peripheral)
-        isConnected = true
+        connectingDeviceIDs.remove(
+            peripheral.identifier
+        )
 
-        status = "Connected to \(displayName(for: peripheral))"
+        if !connectedDevices.contains(
+            where: {
+                $0.identifier ==
+                peripheral.identifier
+            }
+        ) {
+
+            connectedDevices.append(
+                peripheral
+            )
+        }
 
         peripheral.delegate = self
+
+        status =
+            "Connected to \(displayName(for: peripheral)) — finding controls..."
 
         peripheral.discoverServices(
             [Self.serviceUUID]
@@ -258,16 +575,31 @@ extension BLEManager: CBCentralManagerDelegate {
         error: Error?
     ) {
 
-        isConnected = false
-        connectedDevice = nil
-        connectedDeviceName = nil
-        commandCharacteristic = nil
-        disconnectAfterStop = false
+        connectingDeviceIDs.remove(
+            peripheral.identifier
+        )
+
+        commandCharacteristics.removeValue(
+            forKey: peripheral.identifier
+        )
+
+        readyDeviceIDs.remove(
+            peripheral.identifier
+        )
+
+        pendingDisconnectIDs.remove(
+            peripheral.identifier
+        )
 
         if let error {
-            status = "Connection failed: \(error.localizedDescription)"
+
+            status =
+                "Connection failed: \(error.localizedDescription)"
+
         } else {
-            status = "Connection failed"
+
+            status =
+                "Connection failed"
         }
     }
 
@@ -277,23 +609,40 @@ extension BLEManager: CBCentralManagerDelegate {
         error: Error?
     ) {
 
-        isConnected = false
-        connectedDevice = nil
-        connectedDeviceName = nil
-        commandCharacteristic = nil
-        disconnectAfterStop = false
+        let id = peripheral.identifier
+
+        connectingDeviceIDs.remove(id)
+        readyDeviceIDs.remove(id)
+        pendingDisconnectIDs.remove(id)
+
+        commandCharacteristics.removeValue(
+            forKey: id
+        )
+
+        connectedDevices.removeAll {
+            $0.identifier == id
+        }
 
         if let error {
-            status = "Disconnected: \(error.localizedDescription)"
-        } else {
+
+            status =
+                "\(displayName(for: peripheral)) disconnected: \(error.localizedDescription)"
+
+        } else if connectedDevices.isEmpty {
+
             status = "Disconnected"
+
+        } else {
+
+            status = fleetReadyStatus()
         }
     }
 }
 
 // MARK: - CBPeripheralDelegate
 
-extension BLEManager: CBPeripheralDelegate {
+extension BLEManager:
+    CBPeripheralDelegate {
 
     func peripheral(
         _ peripheral: CBPeripheral,
@@ -301,19 +650,28 @@ extension BLEManager: CBPeripheralDelegate {
     ) {
 
         if let error {
+
             status =
-                "Service discovery failed: \(error.localizedDescription)"
+                "Service discovery failed for \(displayName(for: peripheral)): \(error.localizedDescription)"
+
             return
         }
 
-        guard let services = peripheral.services else {
-            status = "No Creepy Eyes service found"
+        guard
+            let services =
+                peripheral.services
+        else {
+
+            status =
+                "No Creepy Eyes service found on \(displayName(for: peripheral))"
+
             return
         }
 
         for service in services {
 
-            if service.uuid == Self.serviceUUID {
+            if service.uuid ==
+                Self.serviceUUID {
 
                 peripheral.discoverCharacteristics(
                     [Self.characteristicUUID],
@@ -330,24 +688,43 @@ extension BLEManager: CBPeripheralDelegate {
     ) {
 
         if let error {
+
             status =
-                "Characteristic discovery failed: \(error.localizedDescription)"
+                "Characteristic discovery failed for \(displayName(for: peripheral)): \(error.localizedDescription)"
+
             return
         }
 
-        guard let characteristics = service.characteristics else {
-            status = "No command characteristic found"
+        guard
+            let characteristics =
+                service.characteristics
+        else {
+
+            status =
+                "No command characteristic found on \(displayName(for: peripheral))"
+
             return
         }
 
-        for characteristic in characteristics {
+        for characteristic
+            in characteristics {
 
-            if characteristic.uuid == Self.characteristicUUID {
+            if characteristic.uuid ==
+                Self.characteristicUUID {
 
-                commandCharacteristic = characteristic
+                commandCharacteristics[
+                    peripheral.identifier
+                ] = characteristic
 
-                status =
-                    "\(displayName(for: peripheral)) ready"
+                readyDeviceIDs.insert(
+                    peripheral.identifier
+                )
+
+                status = fleetReadyStatus()
+
+                print(
+                    "CREEP READY: \(displayName(for: peripheral))"
+                )
             }
         }
     }
@@ -358,19 +735,38 @@ extension BLEManager: CBPeripheralDelegate {
         error: Error?
     ) {
 
+        let id =
+            peripheral.identifier
+
         if let error {
 
             status =
-                "Write failed: \(error.localizedDescription)"
+                "Write failed to \(displayName(for: peripheral)): \(error.localizedDescription)"
 
-            disconnectAfterStop = false
+            // If this write was part of a requested
+            // disconnect, release the creep anyway.
+            if pendingDisconnectIDs.contains(id) {
+
+                pendingDisconnectIDs.remove(id)
+
+                centralManager.cancelPeripheralConnection(
+                    peripheral
+                )
+            }
+
             return
         }
 
-        if disconnectAfterStop {
+        // Stop command acknowledged.
+        // Now safely release this creep.
+        if pendingDisconnectIDs.contains(id),
+           characteristic.uuid ==
+            Self.characteristicUUID {
 
-            disconnectAfterStop = false
-            status = "Disconnecting..."
+            pendingDisconnectIDs.remove(id)
+
+            status =
+                "Disconnecting \(displayName(for: peripheral))..."
 
             centralManager.cancelPeripheralConnection(
                 peripheral

@@ -18,6 +18,7 @@ DerivedData/
 
 # Secrets
 secrets.h
+FleetSecrets.swift
 
 # Misc
 *.swp
