@@ -401,13 +401,36 @@ final class BLEManager: NSObject, ObservableObject {
         _ command: String
     ) -> String {
 
-        switch command.uppercased() {
+        // V2 commands can include parameters:
+        //
+        // L:<speed>
+        // R:<speed>
+        // B:<interval>:<speed>
+        // I:<interval>:<minSpeed>:<maxSpeed>
+        // C:<interval>:<minSpeed>:<maxSpeed>:<seed>
+        //
+        // Only the first field identifies the behavior.
+
+        let opcode =
+            command
+                .split(separator: ":")
+                .first?
+                .uppercased()
+            ?? command.uppercased()
+
+        switch opcode {
 
         case "B":
             return "Blink"
 
+        case "I":
+            return "Independent Creepy"
+
         case "C":
-            return "Creepy Mode"
+            return "Coordinated Creepy"
+
+        case "P":
+            return "Performance"
 
         case "L":
             return "Left Wink"

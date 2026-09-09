@@ -1,5 +1,54 @@
 import SwiftUI
 import CoreBluetooth
+import Foundation
+
+// MARK: - Factory Defaults
+
+enum CreepDefaults {
+
+    static let winkInterval = 3.0
+    static let winkSpeed = 1.0
+
+    static let blinkInterval = 3.0
+    static let blinkSpeed = 1.0
+
+    static let creepyTransitionInterval = 1.0
+    static let creepyMinSpeed = 0.5
+    static let creepyMaxSpeed = 1.5
+
+    static let performanceActionDuration = 10.0
+}
+
+// MARK: - UserDefaults Keys
+
+enum CreepSettingKeys {
+
+    static let winkInterval =
+        "creep.winkInterval"
+
+    static let winkSpeed =
+        "creep.winkSpeed"
+
+    static let blinkInterval =
+        "creep.blinkInterval"
+
+    static let blinkSpeed =
+        "creep.blinkSpeed"
+
+    static let creepyTransitionInterval =
+        "creep.creepyTransitionInterval"
+
+    static let creepyMinSpeed =
+        "creep.creepyMinSpeed"
+
+    static let creepyMaxSpeed =
+        "creep.creepyMaxSpeed"
+
+    static let performanceActionDuration =
+        "creep.performanceActionDuration"
+}
+
+// MARK: - Main View
 
 struct ContentView: View {
 
@@ -10,6 +59,67 @@ struct ContentView: View {
     // UUID = one specific Creep.
     @State private var selectedTargetID:
         UUID? = nil
+
+    // Performance is orchestrated by the
+    // iPhone rather than hard-coded into
+    // each individual Creep.
+    @State private var performanceTask:
+        Task<Void, Never>? = nil
+
+    @State private var performanceRunning =
+        false
+
+    // MARK: Settings
+
+    @AppStorage(
+        CreepSettingKeys.winkInterval
+    )
+    private var winkInterval =
+        CreepDefaults.winkInterval
+
+    @AppStorage(
+        CreepSettingKeys.winkSpeed
+    )
+    private var winkSpeed =
+        CreepDefaults.winkSpeed
+
+    @AppStorage(
+        CreepSettingKeys.blinkInterval
+    )
+    private var blinkInterval =
+        CreepDefaults.blinkInterval
+
+    @AppStorage(
+        CreepSettingKeys.blinkSpeed
+    )
+    private var blinkSpeed =
+        CreepDefaults.blinkSpeed
+
+    @AppStorage(
+        CreepSettingKeys.creepyTransitionInterval
+    )
+    private var creepyTransitionInterval =
+        CreepDefaults.creepyTransitionInterval
+
+    @AppStorage(
+        CreepSettingKeys.creepyMinSpeed
+    )
+    private var creepyMinSpeed =
+        CreepDefaults.creepyMinSpeed
+
+    @AppStorage(
+        CreepSettingKeys.creepyMaxSpeed
+    )
+    private var creepyMaxSpeed =
+        CreepDefaults.creepyMaxSpeed
+
+    @AppStorage(
+        CreepSettingKeys.performanceActionDuration
+    )
+    private var performanceActionDuration =
+        CreepDefaults.performanceActionDuration
+
+    // MARK: Body
 
     var body: some View {
 
@@ -43,6 +153,56 @@ struct ContentView: View {
                     .padding(.top, 18)
                     .padding(.bottom, 28)
                 }
+            }
+            .toolbar {
+
+                ToolbarItem(
+                    placement: .topBarTrailing
+                ) {
+
+                    NavigationLink {
+
+                        CreepSettingsView()
+
+                    } label: {
+
+                        Image(
+                            systemName: "gearshape"
+                        )
+                    }
+                    .accessibilityLabel(
+                        "Settings"
+                    )
+                }
+            }
+        }
+        .onChange(
+            of: selectedTargetID
+        ) { _, _ in
+
+            // Changing targets in the middle
+            // of Performance could leave some
+            // Creeps running an old mode.
+            //
+            // Kill the show cleanly instead.
+            if performanceRunning {
+
+                stopPerformance(
+                    sendStop: true
+                )
+            }
+        }
+        .onChange(
+            of: bleManager.connectedCount
+        ) { _, newCount in
+
+            // Performance requires a fleet.
+            if performanceRunning &&
+                newCount < 2 {
+
+                stopPerformance(
+                    sendStop: true
+                )
             }
         }
     }
@@ -99,6 +259,7 @@ struct ContentView: View {
         }
         .padding()
         .background(
+
             RoundedRectangle(
                 cornerRadius: 14
             )
@@ -130,12 +291,15 @@ struct ContentView: View {
         VStack(spacing: 18) {
 
             scanButton(
-                title: bleManager.isScanning
+                title:
+                    bleManager.isScanning
                     ? "Scanning for Creeps..."
                     : "Scan for Creeps"
             )
 
-            if bleManager.discoveredDevices.isEmpty {
+            if bleManager
+                .discoveredDevices
+                .isEmpty {
 
                 VStack(spacing: 12) {
 
@@ -200,6 +364,13 @@ struct ContentView: View {
                 targetSelector
             }
 
+            Text("Commands")
+                .font(.headline)
+                .frame(
+                    maxWidth: .infinity,
+                    alignment: .leading
+                )
+
             controlsSection
 
             addMoreCreepsSection
@@ -209,10 +380,18 @@ struct ContentView: View {
 
             if bleManager.connectedCount > 1 {
 
-                Button(role: .destructive) {
+                Button(
+                    role: .destructive
+                ) {
+
+                    stopPerformance(
+                        sendStop: false
+                    )
 
                     selectedTargetID = nil
-                    bleManager.disconnectAll()
+
+                    bleManager
+                        .disconnectAll()
 
                 } label: {
 
@@ -233,7 +412,13 @@ struct ContentView: View {
                         .connectedDevices
                         .first {
 
-                Button(role: .destructive) {
+                Button(
+                    role: .destructive
+                ) {
+
+                    stopPerformance(
+                        sendStop: false
+                    )
 
                     selectedTargetID = nil
 
@@ -270,14 +455,17 @@ struct ContentView: View {
                 )
                 .foregroundStyle(.blue)
 
-            if bleManager.connectedCount == 1 {
+            if bleManager.connectedCount == 1,
+               let creep =
+                bleManager
+                    .connectedDevices
+                    .first {
 
                 Text(
-                    bleManager.displayName(
-                        for:
-                            bleManager
-                                .connectedDevices[0]
-                    )
+                    bleManager
+                        .displayName(
+                            for: creep
+                        )
                 )
                 .font(
                     .system(
@@ -316,6 +504,7 @@ struct ContentView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 22)
         .background(
+
             RoundedRectangle(
                 cornerRadius: 20
             )
@@ -399,6 +588,13 @@ struct ContentView: View {
                             role: .destructive
                         ) {
 
+                            if performanceRunning {
+
+                                stopPerformance(
+                                    sendStop: true
+                                )
+                            }
+
                             if
                                 selectedTargetID ==
                                     peripheral
@@ -426,6 +622,7 @@ struct ContentView: View {
                 }
                 .padding()
                 .background(
+
                     RoundedRectangle(
                         cornerRadius: 14
                     )
@@ -487,7 +684,7 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Control Target Button
+    // MARK: - Target Button
 
     @ViewBuilder
     private func targetButton(
@@ -535,6 +732,21 @@ struct ContentView: View {
 
     // MARK: - Controls
 
+    private var fleetOnlyCommandsEnabled:
+        Bool {
+
+        // Current V2 selection model is
+        // ONE creep or ALL.
+        //
+        // Therefore C and P are only valid
+        // when ALL is selected and at least
+        // two Creeps are connected.
+
+        bleManager.connectedCount > 1
+        &&
+        selectedTargetID == nil
+    }
+
     private var controlsSection:
         some View {
 
@@ -543,40 +755,98 @@ struct ContentView: View {
             controlButton(
                 title: "Blink",
                 systemImage: "eye",
-                command: "B",
                 prominent: true
-            )
+            ) {
+
+                handleBehaviorCommand(
+                    blinkCommand
+                )
+            }
 
             controlButton(
-                title: "Creepy Mode",
+                title:
+                    "Independent Creepy",
                 systemImage: "sparkles",
-                command: "C",
                 prominent: true
-            )
+            ) {
+
+                handleBehaviorCommand(
+                    independentCreepyCommand
+                )
+            }
+
+            controlButton(
+                title:
+                    "Coordinated Creepy",
+                systemImage: "eyes",
+                prominent: true,
+                disabled:
+                    !fleetOnlyCommandsEnabled
+            ) {
+
+                startCoordinatedCreepy()
+            }
+
+            controlButton(
+                title:
+                    performanceRunning
+                    ? "Performance Running"
+                    : "Performance",
+                systemImage:
+                    "play.circle.fill",
+                prominent: true,
+                disabled:
+                    !fleetOnlyCommandsEnabled
+                    ||
+                    performanceRunning
+            ) {
+
+                startPerformance()
+            }
 
             HStack(spacing: 12) {
 
                 controlButton(
                     title: "Left Wink",
                     systemImage:
-                        "arrow.left.circle",
-                    command: "L"
-                )
+                        "arrow.left.circle"
+                ) {
+
+                    handleBehaviorCommand(
+                        leftWinkCommand
+                    )
+                }
 
                 controlButton(
                     title: "Right Wink",
                     systemImage:
-                        "arrow.right.circle",
-                    command: "R"
-                )
+                        "arrow.right.circle"
+                ) {
+
+                    handleBehaviorCommand(
+                        rightWinkCommand
+                    )
+                }
             }
 
             controlButton(
                 title:
                     "Stop / Eyes Open",
-                systemImage: "eye.fill",
-                command: "S"
-            )
+                systemImage:
+                    "eye.fill"
+            ) {
+
+                // S is the universal
+                // OH-SHIT button.
+
+                stopPerformance(
+                    sendStop: false
+                )
+
+                sendToCurrentTarget(
+                    "S"
+                )
+            }
         }
     }
 
@@ -586,19 +856,16 @@ struct ContentView: View {
     private func controlButton(
         title: String,
         systemImage: String,
-        command: String,
-        prominent: Bool = false
+        prominent: Bool = false,
+        disabled: Bool = false,
+        action: @escaping () -> Void
     ) -> some View {
 
         if prominent {
 
-            Button {
-
-                sendCommand(
-                    command
-                )
-
-            } label: {
+            Button(
+                action: action
+            ) {
 
                 Label(
                     title,
@@ -617,16 +884,13 @@ struct ContentView: View {
             .buttonStyle(
                 .borderedProminent
             )
+            .disabled(disabled)
 
         } else {
 
-            Button {
-
-                sendCommand(
-                    command
-                )
-
-            } label: {
+            Button(
+                action: action
+            ) {
 
                 Label(
                     title,
@@ -645,15 +909,125 @@ struct ContentView: View {
             .buttonStyle(
                 .bordered
             )
+            .disabled(disabled)
         }
     }
 
-    private func sendCommand(
+    // MARK: - V2 BLE Commands
+
+    /*
+     V2 protocol:
+
+     L:<speed>
+
+     R:<speed>
+
+     B:<interval>:<speed>
+
+     I:<transitionInterval>:<minSpeed>:<maxSpeed>
+
+     C:<transitionInterval>:<minSpeed>:<maxSpeed>:<seed>
+
+
+     Examples:
+
+     L:1.00
+
+     B:3.00:1.00
+
+     I:1.00:0.50:1.50
+
+     C:1.00:0.50:1.50:123456789
+
+
+     Coordinated Creepy sends the SAME
+     random seed and behavior parameters
+     to every Creep.
+
+     Once the firmware is updated, all
+     Creeps will therefore generate the
+     same random sequence.
+     */
+
+    private var leftWinkCommand:
+        String {
+
+        String(
+            format: "L:%.2f",
+            winkSpeed
+        )
+    }
+
+    private var rightWinkCommand:
+        String {
+
+        String(
+            format: "R:%.2f",
+            winkSpeed
+        )
+    }
+
+    private var blinkCommand:
+        String {
+
+        String(
+            format: "B:%.2f:%.2f",
+            blinkInterval,
+            blinkSpeed
+        )
+    }
+
+    private var independentCreepyCommand:
+        String {
+
+        String(
+            format:
+                "I:%.2f:%.2f:%.2f",
+            creepyTransitionInterval,
+            creepyMinSpeed,
+            creepyMaxSpeed
+        )
+    }
+
+    private func coordinatedCreepyCommand(
+        seed: UInt32
+    ) -> String {
+
+        String(
+            format:
+                "C:%.2f:%.2f:%.2f:%u",
+            creepyTransitionInterval,
+            creepyMinSpeed,
+            creepyMaxSpeed,
+            seed
+        )
+    }
+
+    // MARK: - Command Routing
+
+    private func handleBehaviorCommand(
+        _ command: String
+    ) {
+
+        // Any new manual command
+        // aborts Performance.
+
+        stopPerformance(
+            sendStop: false
+        )
+
+        sendToCurrentTarget(
+            command
+        )
+    }
+
+    private func sendToCurrentTarget(
         _ command: String
     ) {
 
         // One connected creep:
-        // naturally behave like the original app.
+        // naturally behave like V1.
+
         if bleManager.connectedCount == 1 {
 
             if let creep =
@@ -673,6 +1047,7 @@ struct ContentView: View {
 
         // Multiple connected creeps:
         // nil means ALL.
+
         if let targetID =
             selectedTargetID {
 
@@ -686,6 +1061,367 @@ struct ContentView: View {
             bleManager
                 .sendCommandToAll(
                     command
+                )
+        }
+    }
+
+    private func sendToFleet(
+        _ command: String
+    ) {
+
+        guard
+            bleManager.connectedCount > 1
+        else {
+            return
+        }
+
+        bleManager
+            .sendCommandToAll(
+                command
+            )
+    }
+
+    // MARK: - Coordinated Creepy
+
+    private func startCoordinatedCreepy() {
+
+        guard
+            fleetOnlyCommandsEnabled
+        else {
+            return
+        }
+
+        stopPerformance(
+            sendStop: false
+        )
+
+        let seed =
+            UInt32.random(
+                in:
+                    UInt32.min
+                    ...
+                    UInt32.max
+            )
+
+        sendToFleet(
+            coordinatedCreepyCommand(
+                seed: seed
+            )
+        )
+    }
+
+    // MARK: - Performance
+
+    private func startPerformance() {
+
+        guard
+            fleetOnlyCommandsEnabled
+        else {
+            return
+        }
+
+        stopPerformance(
+            sendStop: false
+        )
+
+        performanceRunning = true
+
+        // Snapshot settings when P begins.
+        // Changing Settings midway through
+        // the show won't alter an active run.
+
+        let phaseDuration =
+            performanceActionDuration
+
+        let repeatingWinkInterval =
+            winkInterval
+
+        let leftCommand =
+            leftWinkCommand
+
+        let rightCommand =
+            rightWinkCommand
+
+        let blink =
+            blinkCommand
+
+        let independent =
+            independentCreepyCommand
+
+        let coordinated =
+            coordinatedCreepyCommand(
+                seed:
+                    UInt32.random(
+                        in:
+                            UInt32.min
+                            ...
+                            UInt32.max
+                    )
+            )
+
+        performanceTask =
+            Task { @MainActor in
+
+                defer {
+
+                    performanceRunning =
+                        false
+
+                    performanceTask =
+                        nil
+                }
+
+                // LEFT WINK PHASE
+
+                bleManager.status =
+                    "Performance: Left Wink"
+
+                guard
+                    await runRepeatedFleetCommand(
+                        leftCommand,
+                        every:
+                            repeatingWinkInterval,
+                        for:
+                            phaseDuration
+                    )
+                else {
+                    return
+                }
+
+                guard !Task.isCancelled
+                else {
+                    return
+                }
+
+                // RIGHT WINK PHASE
+
+                bleManager.status =
+                    "Performance: Right Wink"
+
+                guard
+                    await runRepeatedFleetCommand(
+                        rightCommand,
+                        every:
+                            repeatingWinkInterval,
+                        for:
+                            phaseDuration
+                    )
+                else {
+                    return
+                }
+
+                guard !Task.isCancelled
+                else {
+                    return
+                }
+
+                // BLINK PHASE
+
+                sendToFleet(blink)
+
+                bleManager.status =
+                    "Performance: Blink"
+
+                guard
+                    await sleepSeconds(
+                        phaseDuration
+                    )
+                else {
+                    return
+                }
+
+                guard !Task.isCancelled
+                else {
+                    return
+                }
+
+                // INDEPENDENT CREEPY PHASE
+
+                sendToFleet(
+                    independent
+                )
+
+                bleManager.status =
+                    "Performance: Independent Creepy"
+
+                guard
+                    await sleepSeconds(
+                        phaseDuration
+                    )
+                else {
+                    return
+                }
+
+                guard !Task.isCancelled
+                else {
+                    return
+                }
+
+                // COORDINATED CREEPY
+                //
+                // This is the resting/finale
+                // state of Performance.
+                //
+                // It runs indefinitely until
+                // S or another command.
+
+                sendToFleet(
+                    coordinated
+                )
+
+                bleManager.status =
+                    "Performance: Coordinated Creepy"
+            }
+    }
+
+    // Repeated L/R phase used by P.
+    //
+    // Manual L and R remain ONE wink.
+    //
+    // Example:
+    // 10-second phase / 3-second interval
+    // gives approximately three winks.
+
+    @MainActor
+    private func runRepeatedFleetCommand(
+        _ command: String,
+        every interval: Double,
+        for duration: Double
+    ) async -> Bool {
+
+        let safeInterval =
+            max(
+                0.25,
+                interval
+            )
+
+        let safeDuration =
+            max(
+                0.25,
+                duration
+            )
+
+        let eventCount =
+            max(
+                1,
+                Int(
+                    floor(
+                        safeDuration
+                        /
+                        safeInterval
+                    )
+                )
+            )
+
+        var elapsed = 0.0
+
+        for index in 0..<eventCount {
+
+            guard !Task.isCancelled
+            else {
+                return false
+            }
+
+            sendToFleet(
+                command
+            )
+
+            if index <
+                eventCount - 1 {
+
+                guard
+                    await sleepSeconds(
+                        safeInterval
+                    )
+                else {
+                    return false
+                }
+
+                elapsed +=
+                    safeInterval
+            }
+        }
+
+        // Keep the phase alive for the
+        // requested total duration even
+        // after its final wink.
+
+        let remaining =
+            safeDuration - elapsed
+
+        if remaining > 0 {
+
+            guard
+                await sleepSeconds(
+                    remaining
+                )
+            else {
+                return false
+            }
+        }
+
+        return !Task.isCancelled
+    }
+
+    private func sleepSeconds(
+        _ seconds: Double
+    ) async -> Bool {
+
+        let safeSeconds =
+            max(
+                0.01,
+                seconds
+            )
+
+        let nanoseconds =
+            UInt64(
+                safeSeconds
+                *
+                1_000_000_000
+            )
+
+        do {
+
+            try await Task.sleep(
+                nanoseconds:
+                    nanoseconds
+            )
+
+            return !Task.isCancelled
+
+        } catch {
+
+            return false
+        }
+    }
+
+    private func stopPerformance(
+        sendStop: Bool
+    ) {
+
+        guard
+            performanceTask != nil
+            ||
+            performanceRunning
+        else {
+            return
+        }
+
+        performanceTask?
+            .cancel()
+
+        performanceTask =
+            nil
+
+        performanceRunning =
+            false
+
+        if sendStop {
+
+            // P always runs against ALL.
+            bleManager
+                .sendCommandToAll(
+                    "S"
                 )
         }
     }
@@ -814,13 +1550,15 @@ struct ContentView: View {
                 .borderedProminent
             )
             .disabled(
-                bleManager.isConnecting(
-                    peripheral
-                )
+                bleManager
+                    .isConnecting(
+                        peripheral
+                    )
             )
         }
         .padding()
         .background(
+
             RoundedRectangle(
                 cornerRadius: 18
             )
@@ -840,7 +1578,8 @@ struct ContentView: View {
 
         Button {
 
-            bleManager.startScanning()
+            bleManager
+                .startScanning()
 
         } label: {
 
@@ -893,6 +1632,416 @@ struct ContentView: View {
     }
 }
 
+// MARK: - Settings Screen
+
+private struct CreepSettingsView:
+    View {
+
+    @AppStorage(
+        CreepSettingKeys.winkInterval
+    )
+    private var winkInterval =
+        CreepDefaults.winkInterval
+
+    @AppStorage(
+        CreepSettingKeys.winkSpeed
+    )
+    private var winkSpeed =
+        CreepDefaults.winkSpeed
+
+    @AppStorage(
+        CreepSettingKeys.blinkInterval
+    )
+    private var blinkInterval =
+        CreepDefaults.blinkInterval
+
+    @AppStorage(
+        CreepSettingKeys.blinkSpeed
+    )
+    private var blinkSpeed =
+        CreepDefaults.blinkSpeed
+
+    @AppStorage(
+        CreepSettingKeys.creepyTransitionInterval
+    )
+    private var creepyTransitionInterval =
+        CreepDefaults.creepyTransitionInterval
+
+    @AppStorage(
+        CreepSettingKeys.creepyMinSpeed
+    )
+    private var creepyMinSpeed =
+        CreepDefaults.creepyMinSpeed
+
+    @AppStorage(
+        CreepSettingKeys.creepyMaxSpeed
+    )
+    private var creepyMaxSpeed =
+        CreepDefaults.creepyMaxSpeed
+
+    @AppStorage(
+        CreepSettingKeys.performanceActionDuration
+    )
+    private var performanceActionDuration =
+        CreepDefaults.performanceActionDuration
+
+    var body: some View {
+
+        Form {
+
+            // MARK: Wink
+
+            Section("Wink") {
+
+                settingRow(
+                    title:
+                        "Wink Interval",
+                    value:
+                        $winkInterval,
+                    range:
+                        1.0...10.0,
+                    step:
+                        0.5,
+                    defaultValue:
+                        CreepDefaults
+                            .winkInterval,
+                    display: {
+                        String(
+                            format:
+                                "%.1f sec",
+                            $0
+                        )
+                    }
+                )
+
+                Text(
+                    "Wink Interval applies when Performance repeats Left/Right Wink. Manual L and R remain single winks."
+                )
+                .font(.caption)
+                .foregroundStyle(
+                    .secondary
+                )
+
+                settingRow(
+                    title:
+                        "Wink Speed",
+                    value:
+                        $winkSpeed,
+                    range:
+                        0.5...2.0,
+                    step:
+                        0.1,
+                    defaultValue:
+                        CreepDefaults
+                            .winkSpeed,
+                    display:
+                        speedDisplay
+                )
+            }
+
+            // MARK: Blink
+
+            Section("Blink") {
+
+                settingRow(
+                    title:
+                        "Blink Interval",
+                    value:
+                        $blinkInterval,
+                    range:
+                        1.0...10.0,
+                    step:
+                        0.5,
+                    defaultValue:
+                        CreepDefaults
+                            .blinkInterval,
+                    display: {
+                        String(
+                            format:
+                                "%.1f sec",
+                            $0
+                        )
+                    }
+                )
+
+                settingRow(
+                    title:
+                        "Blink Speed",
+                    value:
+                        $blinkSpeed,
+                    range:
+                        0.5...2.0,
+                    step:
+                        0.1,
+                    defaultValue:
+                        CreepDefaults
+                            .blinkSpeed,
+                    display:
+                        speedDisplay
+                )
+            }
+
+            // MARK: Creepy
+
+            Section("Creepy") {
+
+                settingRow(
+                    title:
+                        "Transition Interval",
+                    value:
+                        $creepyTransitionInterval,
+                    range:
+                        0.25...5.0,
+                    step:
+                        0.25,
+                    defaultValue:
+                        CreepDefaults
+                            .creepyTransitionInterval,
+                    display: {
+                        String(
+                            format:
+                                "%.2f sec",
+                            $0
+                        )
+                    }
+                )
+
+                settingRow(
+                    title:
+                        "Minimum Speed",
+                    value:
+                        $creepyMinSpeed,
+                    range:
+                        0.25...2.0,
+                    step:
+                        0.1,
+                    defaultValue:
+                        CreepDefaults
+                            .creepyMinSpeed,
+                    display:
+                        speedDisplay
+                )
+                .onChange(
+                    of:
+                        creepyMinSpeed
+                ) { _, newValue in
+
+                    if newValue >
+                        creepyMaxSpeed {
+
+                        creepyMaxSpeed =
+                            newValue
+                    }
+                }
+
+                settingRow(
+                    title:
+                        "Maximum Speed",
+                    value:
+                        $creepyMaxSpeed,
+                    range:
+                        0.25...2.5,
+                    step:
+                        0.1,
+                    defaultValue:
+                        CreepDefaults
+                            .creepyMaxSpeed,
+                    display:
+                        speedDisplay
+                )
+                .onChange(
+                    of:
+                        creepyMaxSpeed
+                ) { _, newValue in
+
+                    if newValue <
+                        creepyMinSpeed {
+
+                        creepyMinSpeed =
+                            newValue
+                    }
+                }
+            }
+
+            // MARK: Performance
+
+            Section("Performance") {
+
+                settingRow(
+                    title:
+                        "Action Duration",
+                    value:
+                        $performanceActionDuration,
+                    range:
+                        2.0...30.0,
+                    step:
+                        1.0,
+                    defaultValue:
+                        CreepDefaults
+                            .performanceActionDuration,
+                    display: {
+                        String(
+                            format:
+                                "%.0f sec",
+                            $0
+                        )
+                    }
+                )
+
+                Text(
+                    "Performance runs Left Wink → Right Wink → Blink → Independent Creepy for this many seconds each, then settles on Coordinated Creepy until Stop."
+                )
+                .font(.caption)
+                .foregroundStyle(
+                    .secondary
+                )
+            }
+
+            // MARK: Restore All
+
+            Section {
+
+                Button(
+                    role: .destructive
+                ) {
+
+                    restoreAllDefaults()
+
+                } label: {
+
+                    Label(
+                        "Restore All Defaults",
+                        systemImage:
+                            "arrow.counterclockwise"
+                    )
+                    .frame(
+                        maxWidth: .infinity
+                    )
+                }
+            }
+        }
+        .navigationTitle(
+            "Settings"
+        )
+        .navigationBarTitleDisplayMode(
+            .inline
+        )
+    }
+
+    // MARK: - Setting Row
+
+    private func settingRow(
+        title: String,
+        value: Binding<Double>,
+        range: ClosedRange<Double>,
+        step: Double,
+        defaultValue: Double,
+        display:
+            @escaping (Double) -> String
+    ) -> some View {
+
+        VStack(
+            alignment: .leading,
+            spacing: 10
+        ) {
+
+            HStack {
+
+                Text(title)
+
+                Spacer()
+
+                Text(
+                    display(
+                        value.wrappedValue
+                    )
+                )
+                .monospacedDigit()
+                .foregroundStyle(
+                    .secondary
+                )
+
+                Button("Reset") {
+
+                    value.wrappedValue =
+                        defaultValue
+                }
+                .buttonStyle(
+                    .borderless
+                )
+            }
+
+            Slider(
+                value: value,
+                in: range,
+                step: step
+            )
+        }
+        .padding(
+            .vertical,
+            2
+        )
+    }
+
+    // MARK: - Speed Display
+
+    private func speedDisplay(
+        _ value: Double
+    ) -> String {
+
+        if abs(
+            value - 1.0
+        ) < 0.001 {
+
+            return "Normal"
+        }
+
+        return String(
+            format:
+                "%.1f×",
+            value
+        )
+    }
+
+    // MARK: - Restore Defaults
+
+    private func restoreAllDefaults() {
+
+        winkInterval =
+            CreepDefaults
+                .winkInterval
+
+        winkSpeed =
+            CreepDefaults
+                .winkSpeed
+
+        blinkInterval =
+            CreepDefaults
+                .blinkInterval
+
+        blinkSpeed =
+            CreepDefaults
+                .blinkSpeed
+
+        creepyTransitionInterval =
+            CreepDefaults
+                .creepyTransitionInterval
+
+        creepyMinSpeed =
+            CreepDefaults
+                .creepyMinSpeed
+
+        creepyMaxSpeed =
+            CreepDefaults
+                .creepyMaxSpeed
+
+        performanceActionDuration =
+            CreepDefaults
+                .performanceActionDuration
+    }
+}
+
 #Preview {
+
     ContentView()
 }
