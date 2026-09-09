@@ -2,7 +2,30 @@
 
 Firmware for the servo-driven CreepyEyes glasses.
 
-This firmware runs on the Seeed Studio XIAO ESP32-C3 installed on each pair of CreepyEyes and is responsible for:
+This directory contains both:
+
+- the shared production firmware used by the Creep Fleet
+- the calibration sketch used when building or servicing an individual creep
+
+Current firmware files:
+
+```text
+CreepyEyes.ino
+CreepyEyesCalibration.ino
+secrets.example.h
+```
+
+---
+
+## Production Firmware
+
+The production firmware is:
+
+```text
+CreepyEyes.ino
+```
+
+It runs on the Seeed Studio XIAO ESP32-C3 installed on each pair of CreepyEyes and is responsible for:
 
 - BLE advertising and secure connection handling
 - receiving commands from the CreepyEyes iPhone app
@@ -29,18 +52,18 @@ The current CreepyEyes build uses:
 - 5V boost converter for servo power
 - shared ground between controller and servo power rail
 
-Servo orientation is defined while looking **at the glasses from the front**:
+Servo orientation is always defined while looking **at the glasses from the front**:
 
-- `D4` = LEFT side
-- `D5` = RIGHT side
+```text
+D4 = LEFT
+D5 = RIGHT
+```
 
 ---
 
-## Current Firmware
+## Shared Fleet Firmware
 
-The production firmware is shared across the entire Creep Fleet.
-
-Each creep runs the same `.ino` file.
+The same `CreepyEyes.ino` production firmware is used across the entire Creep Fleet.
 
 Per-creep differences are handled through:
 
@@ -54,7 +77,7 @@ Current named Creeps include:
 - IGOR
 - GOLLUM
 
-Future Creeps can be added by adding a new calibration block for that name.
+Additional Creeps can be added by creating another calibration block for the new name.
 
 ---
 
@@ -71,6 +94,124 @@ Current development environment:
   - `ESP32Servo`
 - Serial Monitor:
   - `115200 baud`
+
+---
+
+# Calibration
+
+Before a newly built creep is flashed with the production firmware, its servo endpoints should be measured using:
+
+```text
+CreepyEyesCalibration.ino
+```
+
+The calibration sketch provides direct manual control of both servos from the Arduino Serial Monitor.
+
+It does not use BLE and does not require `secrets.h`.
+
+---
+
+## Calibration Controls
+
+Open the Arduino Serial Monitor at:
+
+```text
+115200 baud
+```
+
+The calibration sketch starts both servos at:
+
+```text
+90
+```
+
+Available commands:
+
+```text
+L = select LEFT servo
+R = select RIGHT servo
++ = increase selected servo position by 1
+- = decrease selected servo position by 1
+P = print current servo positions
+```
+
+Example:
+
+```text
+L
++
++
++
+P
+```
+
+selects the LEFT servo, increases its position three steps, then prints the current LEFT and RIGHT positions.
+
+---
+
+## Calibration Procedure
+
+The goal is to determine four values for every physical creep:
+
+```text
+LEFT_OPEN
+LEFT_CLOSED
+RIGHT_OPEN
+RIGHT_CLOSED
+```
+
+Recommended procedure:
+
+1. Flash `CreepyEyesCalibration.ino`.
+2. Open Serial Monitor at `115200`.
+3. Select the LEFT servo with `L`.
+4. Use `+` and `-` until the LEFT eye is fully open without mechanically forcing the linkage.
+5. Record the LEFT OPEN value.
+6. Move the LEFT eye to its desired fully closed position.
+7. Record the LEFT CLOSED value.
+8. Select the RIGHT servo with `R`.
+9. Repeat the process to determine RIGHT OPEN and RIGHT CLOSED.
+10. Use `P` to verify the current servo values as needed.
+11. Record all four final values.
+12. Add those values to the matching `CREEP_NAME` calibration block in `CreepyEyes.ino`.
+13. Flash the production firmware and perform a full-power motion test.
+
+Do not drive a servo farther once the mechanical linkage reaches its safe endpoint.
+
+---
+
+## Per-Creep Calibration
+
+Each creep has unique servo endpoints.
+
+The production firmware selects the correct calibration automatically using `CREEP_NAME`.
+
+Example:
+
+```cpp
+if (name == "KUATO") {
+
+    LEFT_OPEN    = 130;
+    LEFT_CLOSED  = 67;
+
+    RIGHT_OPEN   = 76;
+    RIGHT_CLOSED = 115;
+}
+```
+
+When adding a new creep:
+
+1. mechanically build the glasses
+2. run `CreepyEyesCalibration.ino`
+3. determine:
+   - LEFT OPEN
+   - LEFT CLOSED
+   - RIGHT OPEN
+   - RIGHT CLOSED
+4. add a calibration block for the new creep name to `CreepyEyes.ino`
+5. set that same name in the local `secrets.h`
+6. flash the production firmware
+7. verify BLE and servo operation on battery power
 
 ---
 
@@ -165,44 +306,11 @@ Coordinated Creepy is the final resting state and continues until another comman
 
 ---
 
-## Per-Creep Calibration
-
-Each creep has unique servo endpoints.
-
-The firmware selects the correct calibration automatically using `CREEP_NAME`.
-
-Example:
-
-```cpp
-if (name == "KUATO") {
-
-    LEFT_OPEN    = 130;
-    LEFT_CLOSED  = 67;
-
-    RIGHT_OPEN   = 76;
-    RIGHT_CLOSED = 115;
-}
-```
-
-When adding a new creep:
-
-1. mechanically build and calibrate the glasses
-2. record:
-   - LEFT OPEN
-   - LEFT CLOSED
-   - RIGHT OPEN
-   - RIGHT CLOSED
-3. add a calibration block for the new creep name
-4. set that same name in the local `secrets.h`
-5. flash the shared production firmware
-
----
-
 ## Local Secrets
 
-The firmware uses a local `secrets.h` file for values that should not be committed to source control.
+The production firmware uses a local `secrets.h` file for values that should not be committed to source control.
 
-The real `secrets.h` must remain local.
+The calibration sketch does not require this file.
 
 A sample file is provided as:
 
@@ -257,7 +365,13 @@ The repository `.gitignore` should include:
 secrets.h
 ```
 
-Only `secrets.example.h` should be committed.
+Only:
+
+```text
+secrets.example.h
+```
+
+should be committed.
 
 If a real passcode is ever committed accidentally, adding the file to `.gitignore` afterward does not remove it from Git history.
 
@@ -265,21 +379,34 @@ Rotate the exposed passcode before making the repository public.
 
 ---
 
-## Flashing
+## Production Flashing
 
-Recommended flash workflow:
+Recommended production flash workflow:
 
-1. open the shared production `.ino`
-2. confirm the correct local `CREEP_NAME` in `secrets.h`
-3. select `XIAO_ESP32C3`
-4. compile
-5. upload
-6. open Serial Monitor at `115200`
-7. verify the reported creep name and calibration
-8. test commands
-9. move to the next creep
+1. calibrate the creep using `CreepyEyesCalibration.ino`
+2. record all four servo endpoints
+3. add or verify the creep's calibration block in `CreepyEyes.ino`
+4. confirm the correct local `CREEP_NAME` in `secrets.h`
+5. select `XIAO_ESP32C3`
+6. compile
+7. upload `CreepyEyes.ino`
+8. open Serial Monitor at `115200`
+9. verify the reported creep name and calibration
+10. test BLE commands
+11. perform a full-power servo test using the battery / 5V servo rail
+12. complete final wire management and packaging
 
-Example Serial Monitor commands:
+USB power alone is sufficient for the XIAO and BLE logic, but it does not provide the normal 5V servo rail used by the completed glasses.
+
+A final motion test should therefore be performed using normal battery power before final assembly.
+
+---
+
+## Serial Testing
+
+The production firmware accepts the same command parser from BLE and the Arduino Serial Monitor.
+
+Example commands:
 
 ```text
 L
@@ -302,13 +429,29 @@ S
 
 ---
 
-## Current Firmware File
-
-The current production firmware is:
+## Files in This Directory
 
 ```text
-CreepyEyes.ino
+firmware/
+├── CreepyEyes.ino
+├── CreepyEyesCalibration.ino
+├── README.md
+└── secrets.example.h
 ```
+
+### `CreepyEyes.ino`
+
+Shared production firmware for all Creeps.
+
+### `CreepyEyesCalibration.ino`
+
+Manual servo calibration utility used to determine each physical creep's OPEN and CLOSED servo endpoints.
+
+### `secrets.example.h`
+
+Safe template for the local production `secrets.h`.
+
+The real `secrets.h` is intentionally excluded from source control.
 
 ---
 
@@ -330,4 +473,8 @@ The iPhone app owns:
 - Performance sequencing
 - Coordinated Creepy seed generation
 
-This keeps the BLE contract small and prevents the app from directly controlling raw servo positions.
+The calibration sketch owns one job only:
+
+- determining safe, repeatable servo endpoints for a physical creep
+
+This keeps the BLE contract small, keeps raw servo positions out of the iPhone app, and gives each physical creep an explicit calibration step before production firmware is installed.
