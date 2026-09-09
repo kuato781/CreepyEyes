@@ -1,68 +1,171 @@
 # CreepyEyes
 
-Native iPhone controller for servo-driven **Creepy Eyes** glasses using Bluetooth Low Energy (BLE).
+Native iPhone BLE control system for servo-driven **Creepy Eyes** glasses.
 
 Built by Arroyo Cooperative for highly questionable purposes. 👀
 
-## What It Does
+CreepyEyes combines:
 
-The app discovers nearby Creepy Eyes devices advertising the shared BLE service, connects securely to a selected pair, and sends simple control commands to the glasses.
+- a native SwiftUI iPhone app
+- BLE-connected XIAO ESP32-C3 controllers
+- servo-driven eye mechanisms
+- per-creep calibration
+- multi-device fleet control
+- synchronized random movement
+- configurable motion behavior
+- app-orchestrated Performance mode
 
-Current working controls:
-
-- **Blink**
-- **Creepy Mode**
-- **Left Wink**
-- **Right Wink**
-- **Stop / Eyes Open**
-- **Disconnect**
-
-Disconnect first sends a Stop command so the glasses return to the fully open state before the BLE connection is released.
+---
 
 ## Current Status
 
-Single-creep control is fully functional.
-
-Tested with the first Creepy Eyes unit:
-
-- **KUATO**
-- XIAO ESP32-C3 controller
-- secure BLE pairing
-- shared fleet passcode
-- native iPhone app
-- real-time servo control
-- authenticated BLE command characteristic
-
-The app currently:
-
-1. Scans only for devices advertising the Creepy Eyes BLE service UUID.
-2. Displays available devices by their advertised character name.
-3. Connects to one creep at a time.
-4. Discovers the command characteristic.
-5. Sends UTF-8 command strings over BLE.
-6. Displays readable status messages in the UI.
-7. Safely stops the creep before disconnecting.
-
-## Creepy Fleet
-
-Planned device names:
+CreepyEyes V2 is currently functional across three physical Creeps:
 
 - `KUATO`
 - `IGOR`
 - `GOLLUM`
-- `FESTER`
 
-Each pair of glasses uses:
+Each pair of glasses has:
 
-- the same BLE service UUID
-- the same BLE characteristic UUID
+- its own advertised BLE name
+- its own servo calibration
+- the same shared BLE service
+- the same BLE characteristic
 - the same command protocol
-- its own advertised device name
-- its own per-pair servo calibration values
+- the same shared production firmware
 
-## BLE Protocol
+The iPhone app can connect to one or multiple Creeps at the same time.
 
-### Service UUID
+Current fleet behavior has been tested successfully across all three devices.
+
+---
+
+## What the App Does
+
+The iPhone app:
+
+- scans for nearby CreepyEyes devices
+- connects securely over BLE
+- displays each creep by its advertised name
+- controls a single creep or the connected fleet
+- stores user-adjustable motion settings locally
+- sends parameterized behavior commands to the firmware
+- orchestrates Performance mode
+- generates shared seeds for synchronized Coordinated Creepy behavior
+- safely stops Creeps before disconnecting
+
+The app currently supports:
+
+- **Blink**
+- **Left Wink**
+- **Right Wink**
+- **Independent Creepy**
+- **Coordinated Creepy**
+- **Performance**
+- **Stop / Eyes Open**
+- **Disconnect**
+- **Disconnect All Creeps**
+
+---
+
+## Creep Fleet
+
+Current physical Creeps:
+
+- `KUATO`
+- `IGOR`
+- `GOLLUM`
+
+Each creep uses:
+
+- the same production firmware
+- the same BLE UUIDs
+- the same command protocol
+- its own `CREEP_NAME`
+- its own servo calibration values
+
+The firmware selects the correct calibration automatically from the configured creep name.
+
+---
+
+## Single-Creep Control
+
+With one creep connected, the app behaves as a normal individual controller.
+
+Available behaviors include:
+
+- Blink
+- Independent Creepy
+- Left Wink
+- Right Wink
+- Stop / Eyes Open
+
+Manual Left Wink and Right Wink commands perform one wink.
+
+---
+
+## Fleet Control
+
+When multiple Creeps are connected, the app displays:
+
+- `ALL`
+- each individually connected creep
+
+Commands can be sent to an individual creep or to the fleet.
+
+Fleet-only behaviors currently include:
+
+- **Coordinated Creepy**
+- **Performance**
+
+These become available when multiple Creeps are connected and `ALL` is selected.
+
+---
+
+## Independent Creepy
+
+Independent Creepy causes each creep to generate its own random movement sequence.
+
+Each device independently chooses:
+
+- movement type
+- movement speed
+- subsequent random actions
+
+This creates intentionally uncoordinated creepy motion across the fleet.
+
+---
+
+## Coordinated Creepy
+
+Coordinated Creepy causes every participating creep to perform the same pseudo-random movement sequence.
+
+The iPhone app:
+
+1. generates a random seed
+2. sends the same seed to every creep
+3. sends the same motion parameters to every creep
+
+Because the firmware uses a deterministic pseudo-random sequence, Creeps receiving the same seed generate the same:
+
+- movement
+- speed
+- next movement
+- next speed
+
+The result appears random while remaining synchronized across the fleet.
+
+---
+
+## Performance Mode
+
+Performance mode is orchestrated by the iPhone app.
+
+The default sequence is:
 
 ```text
-4fafc201-1fb5-459e-8fcc-c5c9c331914b
+Left Wink
+→ Right Wink
+→ Blink
+→ Independent Creepy
+→ Coordinated Creepy
