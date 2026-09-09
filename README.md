@@ -383,7 +383,7 @@ CreepyEyes/
 │
 ├── firmware/
 │   ├── README.md
-│   ├── creepy_eyes_v2.ino
+│   ├── CreepyEyes.ino
 │   └── secrets.example.h
 │
 └── CreepyEyes/

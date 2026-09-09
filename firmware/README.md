@@ -307,7 +307,7 @@ S
 The current production firmware is:
 
 ```text
-creepy_eyes_v2.ino
+CreepyEyes.ino
 ```
 
 ---
