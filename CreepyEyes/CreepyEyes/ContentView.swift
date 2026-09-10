@@ -69,6 +69,12 @@ struct ContentView: View {
     @State private var performanceRunning =
         false
 
+    // Team Creep Mode is intentionally
+    // session-only. Relaunching the app
+    // returns to normal single-creep mode.
+    @State private var teamCreepModeEnabled =
+        false
+
     // MARK: Settings
 
     @AppStorage(
@@ -1426,7 +1432,7 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Add More Creeps
+    // MARK: - Team Creep Mode / Add More Creeps
 
     private var addMoreCreepsSection:
         some View {
@@ -1436,37 +1442,121 @@ struct ContentView: View {
             Divider()
                 .padding(.top, 4)
 
-            Text("Add Creeps")
-                .font(.headline)
-                .frame(
-                    maxWidth: .infinity,
-                    alignment: .leading
+            if teamCreepModeEnabled {
+
+                HStack {
+
+                    VStack(
+                        alignment: .leading,
+                        spacing: 4
+                    ) {
+
+                        Text("Team Creep Mode")
+                            .font(.headline)
+
+                        Label(
+                            "Enabled",
+                            systemImage:
+                                "checkmark.circle.fill"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                    }
+
+                    Spacer()
+                }
+
+                scanButton(
+                    title:
+                        bleManager.isScanning
+                        ? "Scanning..."
+                        : "Scan for More Creeps"
                 )
 
-            scanButton(
-                title:
-                    bleManager.isScanning
-                    ? "Scanning..."
-                    : "Scan for More Creeps"
-            )
+                if !bleManager
+                    .availableDiscoveredDevices
+                    .isEmpty {
 
-            if !bleManager
-                .availableDiscoveredDevices
-                .isEmpty {
+                    VStack(spacing: 12) {
+
+                        ForEach(
+                            bleManager
+                                .availableDiscoveredDevices,
+                            id: \.identifier
+                        ) { peripheral in
+
+                            availableCreepCard(
+                                peripheral
+                            )
+                        }
+                    }
+                }
+
+            } else {
 
                 VStack(spacing: 12) {
 
-                    ForEach(
-                        bleManager
-                            .availableDiscoveredDevices,
-                        id: \.identifier
-                    ) { peripheral in
+                    Image(
+                        systemName:
+                            "person.3.fill"
+                    )
+                    .font(
+                        .system(size: 30)
+                    )
+                    .foregroundStyle(.blue)
 
-                        availableCreepCard(
-                            peripheral
+                    Text("Team Creep Mode")
+                        .font(.headline)
+
+                    Text(
+                        "Enable Team Creep Mode to connect and control multiple CreepyEyes."
+                    )
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(
+                        .center
+                    )
+
+                    Button {
+
+                        teamCreepModeEnabled =
+                            true
+
+                        bleManager.status =
+                            "Team Creep Mode Enabled"
+
+                    } label: {
+
+                        Label(
+                            "Enable Team Creep Mode",
+                            systemImage:
+                                "person.3.fill"
+                        )
+                        .font(.headline)
+                        .frame(
+                            maxWidth: .infinity
+                        )
+                        .padding(
+                            .vertical,
+                            5
                         )
                     }
+                    .buttonStyle(
+                        .borderedProminent
+                    )
                 }
+                .padding()
+                .background(
+
+                    RoundedRectangle(
+                        cornerRadius: 18
+                    )
+                    .fill(
+                        Color(
+                            .secondarySystemBackground
+                        )
+                    )
+                )
             }
         }
     }
