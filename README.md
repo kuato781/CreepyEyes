@@ -1,5 +1,7 @@
 # CreepyEyes
 
+![CreepyEyes](creepy_eyes_github_social_1280x640.jpg)
+
 Native iPhone BLE control system for servo-driven **Creepy Eyes** glasses.
 
 Built by Arroyo Cooperative for highly questionable purposes. 👀
