@@ -14,7 +14,7 @@ Prices below are snapshots from the development build and will change. Exact bra
 | 1S 3.7 V 250 mAh LiPo | [Common Sense RC](https://www.commonsenserc.com/product_info.php?products_id=4223) — removable battery |
 | DC-DC step-up / boost board | [Amazon](https://www.amazon.com/dp/B0B4TB9QNY) — configure to ~5 V output |
 | Pushrod / linkage connectors | [Amazon](https://www.amazon.com/dp/B01EE6W2TW) |
-| 2.5 mm steel ball bearings | [Amazon](https://www.amazon.com/dp/B08KTBM74G) — used under the linkage set screw to clamp nylon without the old filament spacer |
+| 2.5 mm steel ball bearings | [Amazon](https://www.amazon.com/dp/B08KTBM74G) — current clamp spacer under the linkage set screw; tested tight with no visible bite marks on the nylon pull string |
 | 470 µF / 10 V electrolytic capacitor | [Amazon](https://www.amazon.com/dp/B0C1VBXCQM) — across boost OUT+ / OUT- |
 | Small slide switch | [Amazon](https://www.amazon.com/dp/B0G8W9QNBQ) |
 | BT2.0 connectors | [Amazon](https://www.amazon.com/dp/B081CFXCH8) |
