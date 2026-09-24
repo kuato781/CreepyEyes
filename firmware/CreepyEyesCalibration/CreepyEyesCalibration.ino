@@ -3,7 +3,7 @@
 Servo leftEye;
 Servo rightEye;
 
-// Viewed from REAR of glasses as in you are wearing
+// LEFT/RIGHT are defined from the WEARER'S perspective.
 const int LEFT_SERVO_PIN  = D4;
 const int RIGHT_SERVO_PIN = D5;
 
