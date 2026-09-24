@@ -15,8 +15,7 @@ Servo rightEye;
 const char* DEVICE_NAME = CREEP_NAME;
 const uint32_t BLE_PASSCODE = FLEET_PASSCODE;
 
-// Servo mapping is ALWAYS Viewed from REAR of glasses
-// as in you are wearing
+// LEFT/RIGHT are defined from the WEARER'S perspective.
 
 const int LEFT_SERVO_PIN  = D4;
 const int RIGHT_SERVO_PIN = D5;
@@ -74,7 +73,7 @@ void configureCalibration() {
     Serial.println("Calibration: GOLLUM");
   }
 
-else if (name == "FESTER") {
+  else if (name == "FESTER") {
 
     LEFT_OPEN    = 127;
     LEFT_CLOSED  = 67;
@@ -111,11 +110,11 @@ else if (name == "FESTER") {
     Serial.println("********************************");
     Serial.println();
 
-    LEFT_OPEN    = 130;
-    LEFT_CLOSED  = 67;
+    LEFT_OPEN    = 135;
+    LEFT_CLOSED  = 72;
 
-    RIGHT_OPEN   = 76;
-    RIGHT_CLOSED = 115;
+    RIGHT_OPEN   = 19;
+    RIGHT_CLOSED = 99;
   }
 }
 
