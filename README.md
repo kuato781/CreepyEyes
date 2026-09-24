@@ -31,6 +31,12 @@ Named Creeps:
 
 The fleet is being standardized on the newer compact hardware architecture documented in [hardware/README.md](hardware/README.md): smaller sub-micro servos, direct-solder servo wiring, formed heat-shrink loom, and the improved ball-bearing linkage clamp.
 
+The compact hardware revision is a substantial packaging cleanup over the original build:
+
+![CreepyEyes hardware evolution](docs/images/evolution/v1-v2-front.jpg)
+
+Additional comparison views are available in [`docs/images/evolution/`](docs/images/evolution/), and a short fleet demo is in [`CreepsInMotion.mp4`](docs/images/media/CreepsInMotion.mp4).
+
 ## What the app does
 
 The iPhone app:
