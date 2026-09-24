@@ -81,7 +81,7 @@ void configureCalibration() {
     RIGHT_OPEN   = 56;
     RIGHT_CLOSED = 129;
 
-    Serial.println("Calibration: GOLLUM");
+    Serial.println("Calibration: FESTER");
   }
 
   else if (name == "LURCH") {
@@ -92,7 +92,7 @@ void configureCalibration() {
     RIGHT_OPEN   = 38;
     RIGHT_CLOSED = 115;
 
-    Serial.println("Calibration: GOLLUM");
+    Serial.println("Calibration: LURCH");
   }
 
   else {
