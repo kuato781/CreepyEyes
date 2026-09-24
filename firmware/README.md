@@ -97,6 +97,12 @@ Current development environment:
 
 ---
 
+# Device type
+
+When firing up the Arduino IDE, you will need to specify the board type: XIAO_ESP32C3
+
+---
+
 # Calibration
 
 Before a newly built creep is flashed with the production firmware, its servo endpoints should be measured using:

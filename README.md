@@ -26,6 +26,8 @@ CreepyEyes V2 is currently functional across three physical Creeps:
 - `KUATO`
 - `IGOR`
 - `GOLLUM`
+- `FESTER`
+- `LURCH`
 
 Each pair of glasses has:
 
@@ -77,6 +79,8 @@ Current physical Creeps:
 - `KUATO`
 - `IGOR`
 - `GOLLUM`
+- `FESTER`
+- `LURCH`
 
 Each creep uses:
 
@@ -353,7 +357,7 @@ secrets.h
 
 for values that should not be committed to source control.
 
-A safe template is provided as:
+A safe template is provided as:v
 
 ```text
 secrets.example.h

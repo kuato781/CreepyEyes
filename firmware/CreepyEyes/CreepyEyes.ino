@@ -15,8 +15,9 @@ Servo rightEye;
 const char* DEVICE_NAME = CREEP_NAME;
 const uint32_t BLE_PASSCODE = FLEET_PASSCODE;
 
-// Servo mapping is ALWAYS defined while looking AT
-// the glasses from the FRONT.
+// Servo mapping is ALWAYS Viewed from REAR of glasses
+// as in you are wearing
+
 const int LEFT_SERVO_PIN  = D4;
 const int RIGHT_SERVO_PIN = D5;
 
@@ -42,33 +43,55 @@ void configureCalibration() {
 
   if (name == "KUATO") {
 
-    LEFT_OPEN    = 130;
-    LEFT_CLOSED  = 67;
+    LEFT_OPEN    = 135;
+    LEFT_CLOSED  = 72;
 
-    RIGHT_OPEN   = 76;
-    RIGHT_CLOSED = 115;
+    RIGHT_OPEN   = 19;
+    RIGHT_CLOSED = 99;
 
     Serial.println("Calibration: KUATO");
   }
 
   else if (name == "IGOR") {
 
-    LEFT_OPEN    = 117;
-    LEFT_CLOSED  = 69;
+    LEFT_OPEN    = 119;
+    LEFT_CLOSED  = 44;
 
-    RIGHT_OPEN   = 74;
-    RIGHT_CLOSED = 110;
+    RIGHT_OPEN   = 31;
+    RIGHT_CLOSED = 104;
 
     Serial.println("Calibration: IGOR");
   }
 
   else if (name == "GOLLUM") {
 
-    LEFT_OPEN    = 116;
-    LEFT_CLOSED  = 74;
+    LEFT_OPEN    = 138;
+    LEFT_CLOSED  = 55;
 
-    RIGHT_OPEN   = 85;
+    RIGHT_OPEN   = 60;
+    RIGHT_CLOSED = 135;
+
+    Serial.println("Calibration: GOLLUM");
+  }
+
+else if (name == "FESTER") {
+
+    LEFT_OPEN    = 127;
+    LEFT_CLOSED  = 67;
+
+    RIGHT_OPEN   = 56;
     RIGHT_CLOSED = 129;
+
+    Serial.println("Calibration: GOLLUM");
+  }
+
+  else if (name == "LURCH") {
+
+    LEFT_OPEN    = 102;
+    LEFT_CLOSED  = 35;
+
+    RIGHT_OPEN   = 38;
+    RIGHT_CLOSED = 115;
 
     Serial.println("Calibration: GOLLUM");
   }
