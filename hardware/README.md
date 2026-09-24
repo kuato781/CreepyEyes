@@ -250,7 +250,30 @@ The newer hardware architecture is primarily a packaging and serviceability refi
 - the 2.5 mm ball-bearing clamp replaces the filament spacer
 - component placement is cleaner and closer to the temple profile
 
-![V1 vs V2 hardware comparison](images/v1-v2-comparison.jpg)
+### Real-world comparison photos
+
+These are the actual compact-build / earlier-build comparison shots used during development.
+
+**Front**
+
+![V1 vs V2 front](../docs/images/evolution/v1-v2-front.jpg)
+
+**Side profile**
+
+![V1 vs V2 side](../docs/images/evolution/v1-v2-side.jpg)
+
+**Top / wiring profile**
+
+![V1 vs V2 top](../docs/images/evolution/v1-v2-top.jpg)
+
+**Folded / packed profile**
+
+![V1 vs V2 folded](../docs/images/evolution/v1-v2-folded.jpg)
+
+A short fleet demo is also available here:
+
+[CreepsInMotion.mp4](../docs/images/media/CreepsInMotion.mp4)
+
 
 The older architecture still works; the compact build is simply the preferred pattern going forward.
 
