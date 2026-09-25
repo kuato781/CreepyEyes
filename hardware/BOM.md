@@ -67,3 +67,20 @@ stl-bambu-3mf/
 ```
 
 The fixture holds the temples open consistently while soldering, fitting linkages, calibrating, and photographing the build.
+
+## Printed travel / storage case
+
+The repository also includes the current 3-slot sliding-lid case used to carry the Creeps:
+
+```text
+stl-bambu-3mf/
+├── CreepyEyes-3Slot-Box.3mf
+├── CreepyEyes_3Slot_Box_BASE_70mm.stl
+├── CreepyEyes_3Slot_Box_LID_70mm.stl
+├── CreepyEyes_Lid_Overlay_NORMAL.svg
+└── CreepyEyes_Lid_Overlay_MIRRORED.svg
+```
+
+The SVG files are intended for a merged lid graphic; the normal and mirrored versions support either face/orientation workflow.
+
+![CreepyEyes case](../docs/images/creepbuild/creepcase.png)
