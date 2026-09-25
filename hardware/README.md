@@ -99,7 +99,23 @@ Use servo tape for initial positioning and mechanical testing before committing 
 
 Center each servo with a tester before installing the horn. Install the arm near 90 degrees inward and tension the nylon so the eyelid is roughly half closed at servo center. Final endpoints are established later with the calibration sketch.
 
-![Build process photos](images/build-process.jpg)
+### Build photos
+
+**Servo installation / fixture setup**
+
+![Servo installation](../docs/images/creepbuild/servo-install.jpg.jpg)
+
+**Assembly held in the printed fixture**
+
+![Fixture clamped](../docs/images/creepbuild/fixture-clamped.jpg.jpg)
+
+**Finished compact build — front**
+
+![Finished compact build front](../docs/images/creepbuild/finished-front.jpg.jpg)
+
+**Finished compact build — side**
+
+![Finished compact build side](../docs/images/creepbuild/finished-side.jpg.jpg)
 
 ## Battery and switch
 
