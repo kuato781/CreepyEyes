@@ -171,13 +171,22 @@ The current preferred hardware build is documented here:
 - [BOM and tools](hardware/BOM.md)
 - [Textual wiring reference](hardware/WIRING.md)
 
-The repository also includes the glasses assembly/calibration fixture:
+The repository also includes the glasses assembly/calibration fixture and the current 3-slot sliding-lid travel/storage case:
 
 ```text
 stl-bambu-3mf/
 ├── creepy-glass-holder.3mf
-└── creepy-glass-holder.stl
+├── creepy-glass-holder.stl
+├── CreepyEyes-3Slot-Box.3mf
+├── CreepyEyes_3Slot_Box_BASE_70mm.stl
+├── CreepyEyes_3Slot_Box_LID_70mm.stl
+├── CreepyEyes_Lid_Overlay_NORMAL.svg
+└── CreepyEyes_Lid_Overlay_MIRRORED.svg
 ```
+
+The case holds three folded Creeps in separate bays and uses the CreepyEyes SVG as a merged lid overlay:
+
+![CreepyEyes 3-slot travel case](docs/images/creepbuild/creepcase.png)
 
 ## Firmware
 
