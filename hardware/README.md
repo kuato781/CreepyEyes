@@ -166,14 +166,37 @@ Individual joints are insulated and the harness is then bundled for routing.
 
 The cross-frame wiring is placed inside heat shrink, warmed, and **formed around the glasses while still warm**. Once cool, the loom naturally holds the frame shape.
 
-This reduces the amount of tape needed: a few retention points can hold a pre-shaped loom instead of taping loose wires along the entire frame.
-
 Current working lengths:
 
 ```text
 1/8 in heat shrink:  about 50 mm per servo-lead section
 3/16 in heat shrink: about 170 mm for the seven-wire main bundle
 ```
+
+### Current loom attachment: Shoe Goo
+
+The original compact build used small pieces of cloth tape to retain the formed loom across the top of the eye assemblies. In practice, the tape did not hold especially well over time and the result was not as clean as the rest of the compact build.
+
+The preferred method is now **Shoe Goo**:
+
+1. Fully form and test the heat-shrink loom first.
+2. Apply a small, controlled bead of Shoe Goo where the loom crosses the top of the eye assemblies/frame.
+3. Press the loom into its final position.
+4. Use small chip clips or similar light clamps to hold the loom in place while the adhesive cures.
+5. Leave the assembly undisturbed until the bond is firm; allow roughly **24-48 hours** for a full cure.
+
+This produces a noticeably cleaner installation and much stronger adhesion than the tape-retained version.
+
+**Loom clamped in place while Shoe Goo cures**
+
+![Wire loom Shoe Goo cure](../docs/images/evolution/wireloom_shoegoo1.jpg)
+
+**Finished Shoe Goo loom attachment**
+
+![Finished wire loom Shoe Goo attachment](../docs/images/evolution/wireloom_shoegoo2.jpg)
+
+> [!NOTE]
+> Treat the Shoe Goo as a final packaging step. Calibration, BLE operation, full battery-powered servo motion, and loom routing should all be verified before permanent adhesion.
 
 ## Wiring
 
@@ -249,7 +272,7 @@ Recommended order:
 9. flash `CreepyEyes.ino`
 10. test BLE behavior
 11. perform a full battery-powered servo test
-12. finish loom routing and permanent attachment
+12. finish loom routing and permanent Shoe Goo attachment
 
 USB power can run the XIAO and BLE logic, but the normal 5 V servo rail depends on the battery/boost system. A final test therefore needs the physical power switch ON and normal battery power.
 
@@ -263,6 +286,7 @@ The newer hardware architecture is primarily a packaging and serviceability refi
 - servo connectors are removed in favor of staggered direct-solder joints
 - factory thin servo wire is retained where useful
 - the cross-frame wiring becomes a formed heat-shrink loom
+- Shoe Goo replaces tape as the preferred permanent loom attachment
 - the 2.5 mm ball-bearing clamp replaces the filament spacer
 - component placement is cleaner and closer to the temple profile
 
@@ -290,7 +314,6 @@ A short fleet demo is also available here:
 
 [CreepsInMotion.mp4](../docs/images/media/CreepsInMotion.mp4)
 
-
 The older architecture still works; the compact build is simply the preferred pattern going forward.
 
 ## Lessons learned
@@ -300,5 +323,6 @@ A few build failures materially improved the design:
 - **Check the donor eye mechanism first.** A sticky eyelid can waste time debugging electronics that are not actually at fault.
 - **Continuity alone does not prove a tiny XIAO pad joint is good.** If one signal behaves strangely, reflow the solder joint before condemning the GPIO.
 - **Do not use the old filament slug as the nylon clamp.** The 2.5 mm ball-bearing spacer is more repeatable and does not damage the cord in current testing.
-- **Test before final Shoe Goo/tape.** Calibration, BLE, and full-power motion should all work before the packaging becomes difficult to service.
-- **Form the loom while the heat shrink is warm.** The cooled loom then follows the frame naturally and requires much less tape.
+- **Test before final Shoe Goo.** Calibration, BLE, full-power motion, and loom routing should all work before the packaging becomes difficult to service.
+- **Form the loom while the heat shrink is warm.** The cooled loom then follows the frame naturally.
+- **Use Shoe Goo instead of tape for the final loom attachment.** Clamping it in place with chip clips while curing gives a stronger, cleaner result.
