@@ -6,6 +6,16 @@ Native iPhone BLE control for servo-driven **Creepy Eyes** glasses.
 
 Built by Arroyo Cooperative for highly questionable purposes. 👀
 
+## Download the iPhone app
+
+The public **Creepy Eyes Controller** app is available on the Apple App Store:
+
+[![Download Creepy Eyes Controller on the App Store](https://img.shields.io/badge/App_Store-Creepy_Eyes_Controller-0D96F6?logo=apple&logoColor=white)](https://apps.apple.com/us/app/creepy-eyes-controller/id6818822575)
+
+**App Store:** https://apps.apple.com/us/app/creepy-eyes-controller/id6818822575
+
+Use the app to discover, connect to, and control one or more CreepyEyes devices over Bluetooth.
+
 CreepyEyes combines:
 
 - a native SwiftUI iPhone app
@@ -19,7 +29,7 @@ CreepyEyes combines:
 
 ## Current status
 
-The app is functionally complete through **V3 Team Creep Mode**.
+The app is functionally complete through **V3 Team Creep Mode** and is publicly available on the App Store.
 
 Named Creeps:
 
@@ -29,7 +39,7 @@ Named Creeps:
 - `FESTER`
 - `LURCH`
 
-The fleet is being standardized on the newer compact hardware architecture documented in [hardware/README.md](hardware/README.md): smaller sub-micro servos, direct-solder servo wiring, formed heat-shrink loom, and the improved ball-bearing linkage clamp.
+The fleet is being standardized on the newer compact hardware architecture documented in [hardware/README.md](hardware/README.md): smaller sub-micro servos, direct-solder servo wiring, formed heat-shrink loom, Shoe Goo loom attachment, and the improved ball-bearing linkage clamp.
 
 The compact hardware revision is a substantial packaging cleanup over the original build:
 
